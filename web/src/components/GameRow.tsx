@@ -1,0 +1,87 @@
+import type { NFLGame } from '../types/api';
+import { LiveBadge } from './LiveBadge';
+import { OddsButton } from './OddsButton';
+
+interface GameRowProps {
+  game: NFLGame;
+}
+
+export function GameRow({ game }: GameRowProps) {
+  const { betting_lines } = game;
+  const isLive = game.status === 'live';
+
+  return (
+    <tr className="border-b border-dk-border hover:bg-dk-card/50 transition-colors">
+      {/* Game Info */}
+      <td className="py-4 px-4">
+        <div className="flex items-center gap-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 bg-dk-bg-light rounded flex items-center justify-center text-xs font-bold">
+                {game.away_team.abbreviation}
+              </span>
+              <span className="text-white font-medium">{game.away_team.name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 bg-dk-bg-light rounded flex items-center justify-center text-xs font-bold">
+                {game.home_team.abbreviation}
+              </span>
+              <span className="text-white font-medium">{game.home_team.name}</span>
+            </div>
+          </div>
+        </div>
+      </td>
+
+      {/* Status */}
+      <td className="py-4 px-4 text-center">
+        {isLive ? (
+          <LiveBadge />
+        ) : (
+          <span className={`text-xs uppercase font-medium ${
+            game.status === 'final' ? 'text-gray-500' : 'text-dk-positive'
+          }`}>
+            {game.status}
+          </span>
+        )}
+      </td>
+
+      {/* Spread */}
+      <td className="py-4 px-4">
+        <div className="flex flex-col gap-1 items-center">
+          <OddsButton
+            line={betting_lines.spread.away_line}
+            odds={betting_lines.spread.away_odds}
+          />
+          <OddsButton
+            line={betting_lines.spread.home_line}
+            odds={betting_lines.spread.home_odds}
+          />
+        </div>
+      </td>
+
+      {/* Total */}
+      <td className="py-4 px-4">
+        <div className="flex flex-col gap-1 items-center">
+          <OddsButton
+            label="O"
+            line={betting_lines.total.over_line}
+            odds={betting_lines.total.over_odds}
+          />
+          <OddsButton
+            label="U"
+            line={betting_lines.total.under_line}
+            odds={betting_lines.total.under_odds}
+          />
+        </div>
+      </td>
+
+      {/* Moneyline */}
+      <td className="py-4 px-4">
+        <div className="flex flex-col gap-1 items-center">
+          <OddsButton odds={betting_lines.money_line.away} />
+          <OddsButton odds={betting_lines.money_line.home} />
+        </div>
+      </td>
+    </tr>
+  );
+}
