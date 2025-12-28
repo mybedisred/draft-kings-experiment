@@ -1,6 +1,7 @@
 import asyncio
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import List, Optional
 
 import click
@@ -221,6 +222,109 @@ def install_browser():
         console.print("[green]Browser installed successfully![/green]")
     else:
         console.print(f"[red]Installation failed: {result.stderr}[/red]")
+
+
+@main.command()
+@click.option(
+    "--host", "-h",
+    type=str,
+    default=None,
+    help="Host to bind to (default: 127.0.0.1)"
+)
+@click.option(
+    "--port", "-p",
+    type=int,
+    default=None,
+    help="Port to bind to (default: 8000)"
+)
+@click.option(
+    "--interval", "-i",
+    type=int,
+    default=None,
+    help="Polling interval in seconds (default: 60)"
+)
+@click.option(
+    "--config", "-c",
+    type=click.Path(exists=True, path_type=Path),
+    default=None,
+    help="Path to config file (TOML)"
+)
+@click.option(
+    "--headless/--no-headless",
+    default=None,
+    help="Run browser in headless mode"
+)
+@click.option(
+    "--no-save",
+    is_flag=True,
+    help="Don't save fetched data to database"
+)
+@click.option(
+    "--reload",
+    is_flag=True,
+    help="Enable auto-reload for development"
+)
+def serve(
+    host: Optional[str],
+    port: Optional[int],
+    interval: Optional[int],
+    config: Optional[Path],
+    headless: Optional[bool],
+    no_save: bool,
+    reload: bool
+):
+    """Start the API server with WebSocket support.
+
+    The server provides:
+
+    \b
+    - REST API at /api/games, /api/health, etc.
+    - WebSocket at /ws for real-time updates
+    - Auto-documentation at /docs
+
+    Configuration priority: CLI args > config file > defaults
+    """
+    import uvicorn
+    from .config import load_config
+    from .server import create_app
+
+    # Load base config from file
+    cfg = load_config(config)
+
+    # Override with CLI arguments
+    if host is not None:
+        cfg.host = host
+    if port is not None:
+        cfg.port = port
+    if interval is not None:
+        cfg.poll_interval = interval
+    if headless is not None:
+        cfg.headless = headless
+    if no_save:
+        cfg.save_to_db = False
+
+    console.print("[cyan]Starting DraftKings API Server[/cyan]")
+    console.print(f"  Host: {cfg.host}")
+    console.print(f"  Port: {cfg.port}")
+    console.print(f"  Poll interval: {cfg.poll_interval}s")
+    console.print(f"  Headless: {cfg.headless}")
+    console.print(f"  Save to DB: {cfg.save_to_db}")
+    console.print()
+    console.print(f"[green]API docs: http://{cfg.host}:{cfg.port}/docs[/green]")
+    console.print(f"[green]WebSocket: ws://{cfg.host}:{cfg.port}/ws[/green]")
+    console.print()
+
+    # Create app with config
+    app = create_app(cfg)
+
+    # Run with uvicorn
+    uvicorn.run(
+        app,
+        host=cfg.host,
+        port=cfg.port,
+        reload=reload,
+        log_level=cfg.log_level
+    )
 
 
 if __name__ == "__main__":
