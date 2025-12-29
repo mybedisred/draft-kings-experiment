@@ -24,7 +24,7 @@ export function OddsButton({ line, odds, label, onClick }: OddsButtonProps) {
     return (
       <button
         disabled
-        className="min-w-[70px] px-2 py-1 bg-dk-card/50 text-gray-500 rounded text-xs cursor-not-allowed"
+        className="min-w-[100px] px-3 py-2 bg-dk-card/50 text-gray-500 rounded text-sm cursor-not-allowed"
       >
         -
       </button>
@@ -35,7 +35,7 @@ export function OddsButton({ line, odds, label, onClick }: OddsButtonProps) {
     <button
       onClick={onClick}
       className={`
-        min-w-[70px] px-2 py-1 rounded text-xs font-medium
+        min-w-[100px] px-3 py-2 rounded text-sm font-medium
         transition-all duration-150
         hover:scale-102 active:scale-98
         ${isPositiveOdds
@@ -44,13 +44,13 @@ export function OddsButton({ line, odds, label, onClick }: OddsButtonProps) {
         }
       `}
     >
-      <div className="flex items-center justify-center gap-1">
-        {label && <span className="text-[10px] text-gray-400">{label}</span>}
+      <div className="flex items-center justify-center gap-1.5">
+        {label && <span className="text-xs text-gray-400">{label}</span>}
         {hasLine && (
-          <span className="font-bold text-xs">{formatLine(line)}</span>
+          <span className="font-bold">{formatLine(line)}</span>
         )}
         {hasOdds && (
-          <span className={`text-[10px] ${isPositiveOdds ? 'text-dk-positive' : 'text-gray-400'}`}>
+          <span className={`text-xs ${isPositiveOdds ? 'text-dk-positive' : 'text-gray-400'}`}>
             ({formatOdds(odds)})
           </span>
         )}

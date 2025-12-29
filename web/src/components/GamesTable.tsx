@@ -17,22 +17,22 @@ export function GamesTable({ games }: GamesTableProps) {
 
   return (
     <div className="bg-dk-card rounded-lg border border-dk-border overflow-hidden">
-      <table className="w-full">
+      <table className="w-full table-fixed">
         <thead>
           <tr className="bg-dk-bg-light border-b border-dk-border">
-            <th className="text-left py-2 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 uppercase tracking-wider w-[28%]">
               Game
             </th>
-            <th className="text-center py-2 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-20">
+            <th className="text-center py-3 px-4 text-sm font-semibold text-gray-400 uppercase tracking-wider w-[12%]">
               Status
             </th>
-            <th className="text-center py-2 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-28">
+            <th className="text-center py-3 px-4 text-sm font-semibold text-gray-400 uppercase tracking-wider w-[20%]">
               Spread
             </th>
-            <th className="text-center py-2 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-28">
+            <th className="text-center py-3 px-4 text-sm font-semibold text-gray-400 uppercase tracking-wider w-[20%]">
               Total
             </th>
-            <th className="text-center py-2 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-24">
+            <th className="text-center py-3 px-4 text-sm font-semibold text-gray-400 uppercase tracking-wider w-[20%]">
               Moneyline
             </th>
           </tr>
