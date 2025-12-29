@@ -88,3 +88,55 @@ class NFLGame:
     @property
     def matchup(self) -> str:
         return f"{self.away_team.abbreviation} @ {self.home_team.abbreviation}"
+
+
+@dataclass
+class Bankroll:
+    balance: float
+    updated_at: datetime
+
+    def to_dict(self) -> dict:
+        return {
+            "balance": self.balance,
+            "updated_at": self.updated_at.isoformat(),
+        }
+
+
+@dataclass
+class Bet:
+    game_id: str
+    bet_type: str  # 'spread_home', 'spread_away', 'total_over', 'total_under', 'ml_home', 'ml_away'
+    selection: str  # Human-readable: "KC Chiefs -3.5", "Over 45.5", etc.
+    stake: float
+    odds: int  # American odds at time of bet
+    potential_payout: float
+    home_team_abbr: str
+    away_team_abbr: str
+    line_value: Optional[float] = None  # The spread/total line (null for moneyline)
+    id: Optional[int] = None
+    status: str = "pending"  # 'pending', 'won', 'lost', 'push'
+    result_amount: Optional[float] = None
+    home_score: Optional[int] = None
+    away_score: Optional[int] = None
+    placed_at: datetime = field(default_factory=datetime.now)
+    settled_at: Optional[datetime] = None
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "game_id": self.game_id,
+            "bet_type": self.bet_type,
+            "selection": self.selection,
+            "stake": self.stake,
+            "odds": self.odds,
+            "potential_payout": self.potential_payout,
+            "status": self.status,
+            "result_amount": self.result_amount,
+            "home_score": self.home_score,
+            "away_score": self.away_score,
+            "placed_at": self.placed_at.isoformat(),
+            "settled_at": self.settled_at.isoformat() if self.settled_at else None,
+            "home_team_abbr": self.home_team_abbr,
+            "away_team_abbr": self.away_team_abbr,
+            "line_value": self.line_value,
+        }

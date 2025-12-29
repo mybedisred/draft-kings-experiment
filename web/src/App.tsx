@@ -1,13 +1,17 @@
+import { Routes, Route } from 'react-router-dom';
 import { useWebSocket } from './hooks/useWebSocket';
+import { BettingProvider } from './context/BettingContext';
 import { Header } from './components/Header';
 import { FeaturedGames } from './components/FeaturedGames';
 import { GamesTable } from './components/GamesTable';
+import { BetSlipModal } from './components/BetSlipModal';
+import { BetHistoryPage } from './pages/BetHistoryPage';
 
-function App() {
+function GamesPage() {
   const { games, isConnected, lastUpdated, error, reconnect } = useWebSocket();
 
   return (
-    <div className="min-h-screen bg-dk-bg text-white">
+    <>
       <Header
         isConnected={isConnected}
         lastUpdated={lastUpdated}
@@ -53,7 +57,38 @@ function App() {
           </>
         )}
       </main>
-    </div>
+    </>
+  );
+}
+
+function HistoryPage() {
+  const { isConnected, lastUpdated, reconnect } = useWebSocket();
+
+  return (
+    <>
+      <Header
+        isConnected={isConnected}
+        lastUpdated={lastUpdated}
+        onReconnect={reconnect}
+      />
+      <main>
+        <BetHistoryPage />
+      </main>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <BettingProvider>
+      <div className="min-h-screen bg-dk-bg text-white">
+        <Routes>
+          <Route path="/" element={<GamesPage />} />
+          <Route path="/history" element={<HistoryPage />} />
+        </Routes>
+        <BetSlipModal />
+      </div>
+    </BettingProvider>
   );
 }
 

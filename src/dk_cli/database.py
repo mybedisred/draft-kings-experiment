@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from .models import (
-    NFLGame, Team, BettingLines, MoneyLine, Spread, Total
+    NFLGame, Team, BettingLines, MoneyLine, Spread, Total, Bet, Bankroll
 )
 
 
@@ -64,6 +64,45 @@ class Database:
 
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_betting_lines_game_id ON betting_lines(game_id)
+            """)
+
+            # Bankroll table (single user)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS bankroll (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    balance REAL NOT NULL DEFAULT 10000.00,
+                    updated_at TEXT NOT NULL
+                )
+            """)
+
+            # Bets table
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS bets (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    game_id TEXT NOT NULL,
+                    bet_type TEXT NOT NULL,
+                    selection TEXT NOT NULL,
+                    stake REAL NOT NULL,
+                    odds INTEGER NOT NULL,
+                    potential_payout REAL NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    result_amount REAL,
+                    home_score INTEGER,
+                    away_score INTEGER,
+                    placed_at TEXT NOT NULL,
+                    settled_at TEXT,
+                    home_team_abbr TEXT NOT NULL,
+                    away_team_abbr TEXT NOT NULL,
+                    line_value REAL
+                )
+            """)
+
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_bets_game_id ON bets(game_id)
+            """)
+
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_bets_status ON bets(status)
             """)
 
     def save_games(self, games: List[NFLGame]) -> int:
@@ -207,3 +246,198 @@ class Database:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute("SELECT DISTINCT game_id FROM games ORDER BY game_id")
             return [row[0] for row in cursor]
+
+    # ==================== BANKROLL METHODS ====================
+
+    def init_bankroll(self, starting_balance: float = 10000.00) -> Bankroll:
+        """Initialize bankroll if it doesn't exist."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("SELECT balance, updated_at FROM bankroll WHERE id = 1")
+            row = cursor.fetchone()
+            if row:
+                return Bankroll(balance=row[0], updated_at=datetime.fromisoformat(row[1]))
+
+            now = datetime.now()
+            conn.execute(
+                "INSERT INTO bankroll (id, balance, updated_at) VALUES (1, ?, ?)",
+                (starting_balance, now.isoformat())
+            )
+            return Bankroll(balance=starting_balance, updated_at=now)
+
+    def get_bankroll(self) -> Bankroll:
+        """Get current bankroll."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("SELECT balance, updated_at FROM bankroll WHERE id = 1")
+            row = cursor.fetchone()
+            if row:
+                return Bankroll(balance=row[0], updated_at=datetime.fromisoformat(row[1]))
+            # Initialize if not exists
+            return self.init_bankroll()
+
+    def update_bankroll(self, new_balance: float) -> Bankroll:
+        """Update bankroll balance."""
+        now = datetime.now()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "UPDATE bankroll SET balance = ?, updated_at = ? WHERE id = 1",
+                (new_balance, now.isoformat())
+            )
+        return Bankroll(balance=new_balance, updated_at=now)
+
+    # ==================== BET METHODS ====================
+
+    def place_bet(self, bet: Bet) -> Bet:
+        """Save a new bet and deduct from bankroll. Returns bet with ID."""
+        with sqlite3.connect(self.db_path) as conn:
+            # Deduct stake from bankroll
+            cursor = conn.execute("SELECT balance FROM bankroll WHERE id = 1")
+            row = cursor.fetchone()
+            current_balance = row[0] if row else 10000.00
+
+            new_balance = current_balance - bet.stake
+            now = datetime.now()
+
+            conn.execute(
+                "UPDATE bankroll SET balance = ?, updated_at = ? WHERE id = 1",
+                (new_balance, now.isoformat())
+            )
+
+            # Insert bet
+            cursor = conn.execute("""
+                INSERT INTO bets (game_id, bet_type, selection, stake, odds, potential_payout,
+                                  status, placed_at, home_team_abbr, away_team_abbr, line_value)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                bet.game_id,
+                bet.bet_type,
+                bet.selection,
+                bet.stake,
+                bet.odds,
+                bet.potential_payout,
+                bet.status,
+                bet.placed_at.isoformat(),
+                bet.home_team_abbr,
+                bet.away_team_abbr,
+                bet.line_value,
+            ))
+
+            bet.id = cursor.lastrowid
+            return bet
+
+    def get_bet(self, bet_id: int) -> Optional[Bet]:
+        """Get a single bet by ID."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("""
+                SELECT id, game_id, bet_type, selection, stake, odds, potential_payout,
+                       status, result_amount, home_score, away_score, placed_at, settled_at,
+                       home_team_abbr, away_team_abbr, line_value
+                FROM bets WHERE id = ?
+            """, (bet_id,))
+            row = cursor.fetchone()
+            if row:
+                return self._row_to_bet(row)
+            return None
+
+    def get_bets(
+        self,
+        game_id: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0
+    ) -> List[Bet]:
+        """Get bets with optional filters."""
+        query = """
+            SELECT id, game_id, bet_type, selection, stake, odds, potential_payout,
+                   status, result_amount, home_score, away_score, placed_at, settled_at,
+                   home_team_abbr, away_team_abbr, line_value
+            FROM bets WHERE 1=1
+        """
+        params = []
+
+        if game_id:
+            query += " AND game_id = ?"
+            params.append(game_id)
+
+        if status:
+            query += " AND status = ?"
+            params.append(status)
+
+        query += " ORDER BY placed_at DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+
+        bets = []
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(query, params)
+            for row in cursor:
+                bets.append(self._row_to_bet(row))
+
+        return bets
+
+    def get_bets_count(self, status: Optional[str] = None) -> int:
+        """Get total count of bets with optional status filter."""
+        query = "SELECT COUNT(*) FROM bets WHERE 1=1"
+        params = []
+
+        if status:
+            query += " AND status = ?"
+            params.append(status)
+
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(query, params)
+            return cursor.fetchone()[0]
+
+    def get_pending_bets_for_game(self, game_id: str) -> List[Bet]:
+        """Get all pending bets for a specific game."""
+        return self.get_bets(game_id=game_id, status="pending")
+
+    def settle_bet(
+        self,
+        bet_id: int,
+        status: str,
+        result_amount: float,
+        home_score: int,
+        away_score: int
+    ) -> Optional[Bet]:
+        """Settle a bet and update bankroll if won."""
+        now = datetime.now()
+        with sqlite3.connect(self.db_path) as conn:
+            # Update bet
+            conn.execute("""
+                UPDATE bets
+                SET status = ?, result_amount = ?, home_score = ?, away_score = ?, settled_at = ?
+                WHERE id = ?
+            """, (status, result_amount, home_score, away_score, now.isoformat(), bet_id))
+
+            # Add winnings to bankroll if won or push
+            if result_amount > 0:
+                cursor = conn.execute("SELECT balance FROM bankroll WHERE id = 1")
+                row = cursor.fetchone()
+                current_balance = row[0] if row else 10000.00
+                new_balance = current_balance + result_amount
+                conn.execute(
+                    "UPDATE bankroll SET balance = ?, updated_at = ? WHERE id = 1",
+                    (new_balance, now.isoformat())
+                )
+
+        return self.get_bet(bet_id)
+
+    def _row_to_bet(self, row) -> Bet:
+        """Convert database row to Bet object."""
+        return Bet(
+            id=row[0],
+            game_id=row[1],
+            bet_type=row[2],
+            selection=row[3],
+            stake=row[4],
+            odds=row[5],
+            potential_payout=row[6],
+            status=row[7],
+            result_amount=row[8],
+            home_score=row[9],
+            away_score=row[10],
+            placed_at=datetime.fromisoformat(row[11]),
+            settled_at=datetime.fromisoformat(row[12]) if row[12] else None,
+            home_team_abbr=row[13],
+            away_team_abbr=row[14],
+            line_value=row[15],
+        )

@@ -68,3 +68,62 @@ export interface WebSocketMessage {
   last_updated?: string | null;
   error?: string;
 }
+
+// ==================== BETTING TYPES ====================
+
+export type BetType = 'spread_home' | 'spread_away' | 'total_over' | 'total_under' | 'ml_home' | 'ml_away';
+export type BetStatus = 'pending' | 'won' | 'lost' | 'push';
+
+export interface Bet {
+  id: number;
+  game_id: string;
+  bet_type: BetType;
+  selection: string;
+  stake: number;
+  odds: number;
+  potential_payout: number;
+  status: BetStatus;
+  result_amount: number | null;
+  home_score: number | null;
+  away_score: number | null;
+  placed_at: string;
+  settled_at: string | null;
+  home_team_abbr: string;
+  away_team_abbr: string;
+  line_value: number | null;
+}
+
+export interface Bankroll {
+  balance: number;
+  updated_at: string;
+}
+
+export interface PlaceBetRequest {
+  game_id: string;
+  bet_type: BetType;
+  stake: number;
+  odds: number;
+  line_value: number | null;
+  selection: string;
+  home_team_abbr: string;
+  away_team_abbr: string;
+}
+
+export interface PlaceBetResponse {
+  bet: Bet;
+  bankroll: Bankroll;
+}
+
+export interface BetsResponse {
+  bets: Bet[];
+  total_count: number;
+  limit: number;
+  offset: number;
+}
+
+export interface SettleGameResponse {
+  game_id: string;
+  final_score: { home: number; away: number };
+  settled_bets: Bet[];
+  bankroll: Bankroll;
+}

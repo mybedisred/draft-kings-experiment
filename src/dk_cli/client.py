@@ -1,6 +1,6 @@
 import asyncio
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from playwright.async_api import async_playwright, Browser, Page
@@ -158,8 +158,17 @@ class DraftKingsClient:
             )
 
         # Get game time/status
-        time_el = await card.query_selector("[class*='cb-market__time'], [class*='event-time']")
+        time_el = await card.query_selector("[class*='event-start-time'], [class*='event-cell__start-time'], [class*='cb-market__time'], [class*='event-time']")
         start_time = datetime.now()
+
+        if time_el:
+            try:
+                time_text = await time_el.inner_text()
+                parsed_time = self._parse_game_time(time_text)
+                if parsed_time:
+                    start_time = parsed_time
+            except:
+                pass
 
         game_id = f"{self._abbreviate(away_name)}_{self._abbreviate(home_name)}_{start_time.strftime('%Y%m%d')}"
 
@@ -194,6 +203,97 @@ class DraftKingsClient:
             return int(match.group(1))
         return None
 
+    def _parse_game_time(self, time_text: str) -> Optional[datetime]:
+        """Parse game time from DraftKings format.
+
+        Handles formats like:
+        - "Sun 1:00PM ET"
+        - "TODAY 1:00PM ET"
+        - "12/29 1:00PM ET"
+        - "Dec 29 1:00PM ET"
+        - "1:00PM ET"
+        """
+        if not time_text:
+            return None
+
+        time_text = time_text.strip().upper()
+        now = datetime.now()
+
+        # Extract time portion (e.g., "1:00PM" or "13:00")
+        time_match = re.search(r'(\d{1,2}):(\d{2})\s*(AM|PM)?', time_text, re.IGNORECASE)
+        if not time_match:
+            return None
+
+        hour = int(time_match.group(1))
+        minute = int(time_match.group(2))
+        ampm = time_match.group(3)
+
+        if ampm:
+            ampm = ampm.upper()
+            if ampm == "PM" and hour != 12:
+                hour += 12
+            elif ampm == "AM" and hour == 12:
+                hour = 0
+
+        # Try to extract date
+        # Format: "12/29" or "12/29/24"
+        date_match = re.search(r'(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?', time_text)
+        if date_match:
+            month = int(date_match.group(1))
+            day = int(date_match.group(2))
+            year = now.year
+            if date_match.group(3):
+                year = int(date_match.group(3))
+                if year < 100:
+                    year += 2000
+            return datetime(year, month, day, hour, minute)
+
+        # Format: "Dec 29" or "December 29"
+        month_names = {
+            'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 'MAY': 5, 'JUN': 6,
+            'JUL': 7, 'AUG': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12,
+            'JANUARY': 1, 'FEBRUARY': 2, 'MARCH': 3, 'APRIL': 4, 'JUNE': 6,
+            'JULY': 7, 'AUGUST': 8, 'SEPTEMBER': 9, 'OCTOBER': 10, 'NOVEMBER': 11, 'DECEMBER': 12
+        }
+        for month_name, month_num in month_names.items():
+            if month_name in time_text:
+                day_match = re.search(rf'{month_name}\s+(\d{{1,2}})', time_text)
+                if day_match:
+                    day = int(day_match.group(1))
+                    year = now.year
+                    # If the date is in the past, assume next year
+                    game_date = datetime(year, month_num, day, hour, minute)
+                    if game_date < now - timedelta(days=1):
+                        game_date = datetime(year + 1, month_num, day, hour, minute)
+                    return game_date
+
+        # Format: "TODAY" or day of week (Sun, Mon, etc.)
+        days_of_week = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN',
+                        'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
+
+        if 'TODAY' in time_text:
+            return datetime(now.year, now.month, now.day, hour, minute)
+
+        if 'TOMORROW' in time_text:
+            tomorrow = now + timedelta(days=1)
+            return datetime(tomorrow.year, tomorrow.month, tomorrow.day, hour, minute)
+
+        for i, day_name in enumerate(days_of_week):
+            if day_name in time_text:
+                # Calculate the date for this day of week
+                current_dow = now.weekday()  # Monday = 0
+                target_dow = i % 7  # Convert to Monday = 0
+
+                days_ahead = target_dow - current_dow
+                if days_ahead < 0:  # Target day already happened this week
+                    days_ahead += 7
+
+                target_date = now + timedelta(days=days_ahead)
+                return datetime(target_date.year, target_date.month, target_date.day, hour, minute)
+
+        # Fallback: just use today's date with the parsed time
+        return datetime(now.year, now.month, now.day, hour, minute)
+
     async def _parse_game_card(self, card) -> Optional[NFLGame]:
         """Parse a single game card element."""
         # Get team names
@@ -225,7 +325,7 @@ class DraftKingsClient:
         betting_lines = self._parse_odds_values(odds_values)
 
         # Get game time
-        time_element = await card.query_selector("[class*='event-cell__time']")
+        time_element = await card.query_selector("[class*='event-cell__time'], [class*='event-start-time']")
         start_time = datetime.now()
         status = "upcoming"
 
@@ -235,6 +335,10 @@ class DraftKingsClient:
                 status = "live"
             elif "FINAL" in time_text.upper():
                 status = "final"
+            else:
+                parsed_time = self._parse_game_time(time_text)
+                if parsed_time:
+                    start_time = parsed_time
 
         # Generate game ID from team names
         game_id = f"{self._abbreviate(away_name)}_{self._abbreviate(home_name)}_{start_time.strftime('%Y%m%d')}"
@@ -276,14 +380,29 @@ class DraftKingsClient:
 
                 betting_lines = await self._parse_row_odds(away_odds, home_odds)
 
-                game_id = f"{self._abbreviate(away_name)}_{self._abbreviate(home_name)}_{datetime.now().strftime('%Y%m%d')}"
+                # Get game time
+                start_time = datetime.now()
+                status = "upcoming"
+                time_el = await away_row.query_selector("[class*='event-cell__time'], [class*='event-start-time']")
+                if time_el:
+                    time_text = await time_el.inner_text()
+                    if "LIVE" in time_text.upper():
+                        status = "live"
+                    elif "FINAL" in time_text.upper():
+                        status = "final"
+                    else:
+                        parsed_time = self._parse_game_time(time_text)
+                        if parsed_time:
+                            start_time = parsed_time
+
+                game_id = f"{self._abbreviate(away_name)}_{self._abbreviate(home_name)}_{start_time.strftime('%Y%m%d')}"
 
                 games.append(NFLGame(
                     game_id=game_id,
                     home_team=Team(name=home_name.strip(), abbreviation=self._abbreviate(home_name)),
                     away_team=Team(name=away_name.strip(), abbreviation=self._abbreviate(away_name)),
-                    start_time=datetime.now(),
-                    status="upcoming",
+                    start_time=start_time,
+                    status=status,
                     betting_lines=betting_lines,
                 ))
             except Exception as e:
