@@ -8,18 +8,24 @@ export interface MoneyLine {
   away: number | null;
 }
 
+export interface SpreadLine {
+  line: number | null;
+  odds: number | null;
+}
+
 export interface Spread {
-  home_line: number | null;
-  home_odds: number | null;
-  away_line: number | null;
-  away_odds: number | null;
+  home: SpreadLine;
+  away: SpreadLine;
+}
+
+export interface TotalLine {
+  line: number | null;
+  odds: number | null;
 }
 
 export interface Total {
-  over_line: number | null;
-  over_odds: number | null;
-  under_line: number | null;
-  under_odds: number | null;
+  over: TotalLine;
+  under: TotalLine;
 }
 
 export interface BettingLines {

@@ -7,6 +7,7 @@ interface GameCardProps {
 
 export function GameCard({ game }: GameCardProps) {
   const isLive = game.status === 'live';
+  const awaySpread = game.betting_lines.spread.away.line;
 
   return (
     <div
@@ -64,8 +65,8 @@ export function GameCard({ game }: GameCardProps) {
         <div className="flex justify-between text-xs">
           <span className="text-gray-500">Spread</span>
           <span className="text-white font-medium">
-            {game.betting_lines.spread.away_line !== null
-              ? `${game.away_team.abbreviation} ${game.betting_lines.spread.away_line > 0 ? '+' : ''}${game.betting_lines.spread.away_line}`
+            {awaySpread !== null
+              ? `${game.away_team.abbreviation} ${awaySpread > 0 ? '+' : ''}${awaySpread}`
               : '-'}
           </span>
         </div>

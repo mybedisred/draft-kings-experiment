@@ -49,12 +49,12 @@ export function GameRow({ game }: GameRowProps) {
       <td className="py-4 px-4">
         <div className="flex flex-col gap-1 items-center">
           <OddsButton
-            line={betting_lines.spread.away_line}
-            odds={betting_lines.spread.away_odds}
+            line={betting_lines.spread.away.line}
+            odds={betting_lines.spread.away.odds}
           />
           <OddsButton
-            line={betting_lines.spread.home_line}
-            odds={betting_lines.spread.home_odds}
+            line={betting_lines.spread.home.line}
+            odds={betting_lines.spread.home.odds}
           />
         </div>
       </td>
@@ -64,13 +64,13 @@ export function GameRow({ game }: GameRowProps) {
         <div className="flex flex-col gap-1 items-center">
           <OddsButton
             label="O"
-            line={betting_lines.total.over_line}
-            odds={betting_lines.total.over_odds}
+            line={betting_lines.total.over.line}
+            odds={betting_lines.total.over.odds}
           />
           <OddsButton
             label="U"
-            line={betting_lines.total.under_line}
-            odds={betting_lines.total.under_odds}
+            line={betting_lines.total.under.line}
+            odds={betting_lines.total.under.odds}
           />
         </div>
       </td>

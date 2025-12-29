@@ -1,12 +1,38 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Custom theme colors */
+@theme {
+  --color-dk-bg: #0f0d1a;
+  --color-dk-bg-light: #1a1625;
+  --color-dk-card: #1e1a2e;
+  --color-dk-card-hover: #252136;
+  --color-dk-border: #2d2640;
+  --color-dk-accent: #8b5cf6;
+  --color-dk-accent-hover: #7c3aed;
+  --color-dk-live: #ef4444;
+  --color-dk-positive: #22c55e;
+  --color-dk-negative: #ef4444;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px #ef4444, 0 0 10px #ef4444;
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 10px #ef4444, 0 0 20px #ef4444;
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
