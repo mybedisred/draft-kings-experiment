@@ -15,10 +15,10 @@ export function FeaturedGames({ games }: FeaturedGamesProps) {
   }
 
   return (
-    <section className="mb-8">
-      <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-lg font-semibold text-white">
-          {liveGames.length > 0 ? 'Live Games' : 'Featured Matches'}
+    <section className="mb-4">
+      <div className="flex items-center gap-2 mb-2">
+        <h2 className="text-sm font-semibold text-white uppercase tracking-wide">
+          {liveGames.length > 0 ? 'Live' : 'Featured'}
         </h2>
         {liveGames.length > 0 && (
           <span className="text-xs bg-dk-live/20 text-dk-live px-2 py-0.5 rounded">
@@ -27,7 +27,7 @@ export function FeaturedGames({ games }: FeaturedGamesProps) {
         )}
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2">
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2">
         {featuredGames.map((game) => (
           <GameCard key={game.game_id} game={game} />
         ))}

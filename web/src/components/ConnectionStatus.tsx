@@ -11,21 +11,21 @@ export function ConnectionStatus({ isConnected, lastUpdated, onReconnect }: Conn
   };
 
   return (
-    <div className="flex items-center gap-4 text-sm">
-      <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3 text-xs">
+      <div className="flex items-center gap-1.5">
         <span
-          className={`w-2 h-2 rounded-full ${
+          className={`w-1.5 h-1.5 rounded-full ${
             isConnected ? 'bg-dk-positive' : 'bg-dk-negative'
           }`}
         />
         <span className="text-gray-400">
-          {isConnected ? 'Connected' : 'Disconnected'}
+          {isConnected ? 'Live' : 'Offline'}
         </span>
       </div>
 
       {lastUpdated && (
-        <span className="text-gray-500">
-          Last update: {formatTime(lastUpdated)}
+        <span className="text-gray-500 hidden sm:inline">
+          {formatTime(lastUpdated)}
         </span>
       )}
 

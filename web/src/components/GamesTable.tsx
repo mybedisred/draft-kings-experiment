@@ -20,19 +20,19 @@ export function GamesTable({ games }: GamesTableProps) {
       <table className="w-full">
         <thead>
           <tr className="bg-dk-bg-light border-b border-dk-border">
-            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 uppercase tracking-wider">
+            <th className="text-left py-2 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
               Game
             </th>
-            <th className="text-center py-3 px-4 text-sm font-semibold text-gray-400 uppercase tracking-wider">
+            <th className="text-center py-2 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-20">
               Status
             </th>
-            <th className="text-center py-3 px-4 text-sm font-semibold text-gray-400 uppercase tracking-wider">
+            <th className="text-center py-2 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-28">
               Spread
             </th>
-            <th className="text-center py-3 px-4 text-sm font-semibold text-gray-400 uppercase tracking-wider">
+            <th className="text-center py-2 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-28">
               Total
             </th>
-            <th className="text-center py-3 px-4 text-sm font-semibold text-gray-400 uppercase tracking-wider">
+            <th className="text-center py-2 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider w-24">
               Moneyline
             </th>
           </tr>

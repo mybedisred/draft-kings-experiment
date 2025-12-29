@@ -14,7 +14,7 @@ function App() {
         onReconnect={reconnect}
       />
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-4">
         {/* Error Banner */}
         {error && (
           <div className="mb-6 p-4 bg-dk-negative/20 border border-dk-negative/50 rounded-lg text-dk-negative">
@@ -39,12 +39,12 @@ function App() {
             <FeaturedGames games={games} />
 
             <section>
-              <h2 className="text-lg font-semibold text-white mb-4">All Games</h2>
+              <h2 className="text-sm font-semibold text-white uppercase tracking-wide mb-2">All Games</h2>
               <GamesTable games={games} />
             </section>
 
             {/* Footer Info */}
-            <div className="mt-8 text-center text-sm text-gray-500">
+            <div className="mt-4 text-center text-xs text-gray-500">
               <p>
                 Showing {games.length} games
                 {lastUpdated && ` • Last updated ${lastUpdated.toLocaleTimeString()}`}
